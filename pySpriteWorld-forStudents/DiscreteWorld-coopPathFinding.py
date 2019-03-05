@@ -11,11 +11,97 @@ from ontology import Ontology
 from itertools import chain
 import pygame
 import glo
-
+import heapq
 import random 
 import numpy as np
 import sys
 
+
+def distManhattan(p1,p2):
+    """ calcule la distance de Manhattan entre le tuple 
+        p1 et le tuple p2
+        """
+    (x1,y1)=p1
+    (x2,y2)=p2
+    return abs(x1-x2)+abs(y1-y2)
+
+class Noeud:
+    def __init__(self, x,y,  g, pere=None):
+        self.x = x
+        self.y = y 
+        self.g = g
+        self.pere = pere
+        
+    def __str__(self):
+        #return np.array_str(self.etat) + "valeur=" + str(self.g)
+        return str(self.x)+", " +str(self.y)  + " valeur=" + str(self.g)
+        
+    def __eq__(self, other):
+        return str(self) == str(other)
+        
+    def __lt__(self, other):
+        return str(self) < str(other)
+        
+    def expand(self):
+        """ étend un noeud avec ces fils
+            pour un probleme de taquin p donné
+            """
+        nouveaux_fils = [Noeud(self.x + s[0],self.y+ s[1], self.g+1,self) for s in [(1,0), (0,1), (0,-1), (-1,0)]]
+        return nouveaux_fils
+    def expandNext(self,p,k):
+        """ étend un noeud unique, le k-ième fils du noeud n
+            ou liste vide si plus de noeud à étendre
+        """
+        nouveaux_fils = self.expand()
+        if len(nouveaux_fils)<k: 
+            return []
+        else: 
+            return self.expand()[k-1]
+            
+    def trace(self):
+        """ affiche tous les ancetres du noeud
+            """
+        n = self
+        c=0    
+        while n!=None :
+            n = n.pere
+            c+=1
+        print ("Nombre d'étapes de la solution:", c-1)
+        return
+	
+
+
+
+
+def astar(initStates, goalStates, wallStates , i):
+    """ application de l'algorithme a-star sur un probleme donné
+        """
+    nodeInit = Noeud(initStates[i][0], initStates[i][1],0,None)
+    frontiere = [(nodeInit.g+distManhattan((nodeInit.x, nodeInit.y),goalStates[i]),nodeInit)] 
+    reserve = {}        
+    bestNoeud = nodeInit
+    
+    while frontiere != [] and not (goalStates[i]==(bestNoeud.x, bestNoeud.y)):              
+        (min_f,bestNoeud) = heapq.heappop(frontiere)         
+    # Suppose qu'un noeud en réserve n'est jamais ré-étendu 
+    # Hypothèse de consistence de l'heuristique
+    # ne gère pas les duplicatas dans la frontière
+    
+        if str(bestNoeud.x) + " " + str(bestNoeud.y) not in reserve:            
+            reserve[str(bestNoeud.x) + " " + str(bestNoeud.y)] = bestNoeud.g #maj de reserve
+            nouveauxNoeuds = bestNoeud.expand()            
+            for n in nouveauxNoeuds:
+                if (n.x,n.y) not in wallStates and n.x>=0 and n.x<=19 and n.y>=0 and n.y<=19:
+                    f = n.g+distManhattan((n.x, n.y),goalStates[i])
+                    heapq.heappush(frontiere, (f,n))              
+    # Afficher le résultat  
+    res = []
+    while(bestNoeud.pere != None):
+        res.append((bestNoeud.x - bestNoeud.pere.x, bestNoeud.y - bestNoeud.pere.y))   
+        bestNoeud = bestNoeud.pere   
+    reversed(res)  
+       
+    return res
 
 
     
@@ -86,18 +172,23 @@ def main():
     #-------------------------------
     # Boucle principale de déplacements 
     #-------------------------------
+    res = []
+    #obj = astar([initStates[0]], [goalStates[0]], wallStates, 0 )
     
-        
+    for i in range(nbPlayers):
+        res.append(astar(initStates, goalStates, wallStates , i))
+        #print ("init:" ,[initStates[i]], [goalStates[i]], wallStates ))
+    #print("  resultat :   ", res)  
     # bon ici on fait juste plusieurs random walker pour exemple...
     
     posPlayers = initStates
 
     for i in range(iterations):
-        
         for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
             row,col = posPlayers[j]
+            print("liste ", j, "   ", res[j])
+            x_inc,y_inc = res[j].pop(0)
 
-            x_inc,y_inc = random.choice([(0,1),(0,-1),(1,0),(-1,0)])
             next_row = row+x_inc
             next_col = col+y_inc
             # and ((next_row,next_col) not in posPlayers)
@@ -118,7 +209,7 @@ def main():
                 o = players[j].ramasse(game.layers)
                 game.mainiteration()
                 print ("Objet trouvé par le joueur ", j)
-                goalStates.remove((row,col)) # on enlève ce goalState de la liste
+                #goalStates.remove((row,col)) # on enlève ce goalState de la liste
                 score[j]+=1
                 
         
@@ -129,7 +220,10 @@ def main():
                     x = random.randint(1,19)
                     y = random.randint(1,19)
                 o.set_rowcol(x,y)
-                goalStates.append((x,y)) # on ajoute ce nouveau goalState
+                print(goalStates)
+                goalStates[j] = (x,y) # on ajoute ce nouveau goalState
+                initStates[j] = posPlayers[j]
+                res[j]= astar(initStates, goalStates, wallStates , j)
                 game.layers['ramassable'].add(o)
                 game.mainiteration()                
                 
