@@ -188,7 +188,7 @@ def main():
         
             
             # si on a  trouvé un objet on le ramasse
-            if (row,col) in goalStates:
+            if (row,col) in goalStates and goalStates.index((row, col)) == j:
                 
                 o = players[j].ramasse(game.layers)
                 game.mainiteration()
