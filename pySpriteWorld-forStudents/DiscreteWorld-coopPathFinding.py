@@ -158,36 +158,19 @@ def main():
         
     # on localise tous les murs
     wallStates = [w.get_rowcol() for w in game.layers['obstacle']]
-    #print ("Wall states:", wallStates)
     
-    #-------------------------------
-    # Placement aleatoire des fioles 
-    #-------------------------------
-    
-    
-    # on donne a chaque joueur une fiole a ramasser
-    # en essayant de faire correspondre les couleurs pour que ce soit plus simple à suivre
-    
-    
-    #-------------------------------
-    # Boucle principale de déplacements 
-    #-------------------------------
     res = []
     #obj = astar([initStates[0]], [goalStates[0]], wallStates, 0 )
     
     for i in range(nbPlayers):
         res.append(astar(initStates, goalStates, wallStates , i))
-        #print ("init:" ,[initStates[i]], [goalStates[i]], wallStates ))
-    #print("  resultat :   ", res)  
-    # bon ici on fait juste plusieurs random walker pour exemple...
-    
     posPlayers = initStates
 
     for i in range(iterations):
         for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
             row,col = posPlayers[j]
-            print("liste ", j, "   ", res[j])
-            x_inc,y_inc = res[j].pop(0)
+            #print("liste ", j, "   ", res[j])
+            x_inc,y_inc = res[j].pop()
 
             next_row = row+x_inc
             next_col = col+y_inc
@@ -206,13 +189,16 @@ def main():
             
             # si on a  trouvé un objet on le ramasse
             if (row,col) in goalStates:
+                
                 o = players[j].ramasse(game.layers)
                 game.mainiteration()
                 print ("Objet trouvé par le joueur ", j)
                 #goalStates.remove((row,col)) # on enlève ce goalState de la liste
+                indice = goalStates.index((row, col))
                 score[j]+=1
-                
-        
+
+
+
                 # et on remet un même objet à un autre endroit
                 x = random.randint(1,19)
                 y = random.randint(1,19)
@@ -220,15 +206,17 @@ def main():
                     x = random.randint(1,19)
                     y = random.randint(1,19)
                 o.set_rowcol(x,y)
-                print(goalStates)
-                goalStates[j] = (x,y) # on ajoute ce nouveau goalState
+                #goalStates.append((x,y)) # on ajoute ce nouveau goalState
+                goalStates[indice] = (x,y) # on ajoute ce nouveau goalState
                 initStates[j] = posPlayers[j]
-                res[j]= astar(initStates, goalStates, wallStates , j)
+                res[j] = astar(initStates, goalStates, wallStates , j)
                 game.layers['ramassable'].add(o)
                 game.mainiteration()                
-                
+
                 break
-            
+
+
+
     
     print ("scores:", score)
     pygame.quit()
