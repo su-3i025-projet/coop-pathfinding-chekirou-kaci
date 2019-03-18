@@ -118,8 +118,8 @@ game = Game()
 
 def init(_boardname=None):
     global player,game
-    # pathfindingWorld_MultiPlayer4
-    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer3'
+    # pathfindingWorld_MultiPlayer
+    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer1'
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
@@ -127,7 +127,35 @@ def init(_boardname=None):
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
-    
+
+def stratégie_opportuniste(posPlayers , j, res,initStates,  wallStates, goalStates ):
+    row,col = posPlayers[j]
+    #print("liste ", j, "   ", res[j])
+    x_inc,y_inc = res[j].pop()
+    # si quelqu'un se trouve a la prochaine case
+    print("next step", x_inc,y_inc)
+    occupieda,person = occupied((row+x_inc,col+y_inc), posPlayers)
+    if(occupieda):
+        print("je suis ", j ,"case occupée par " , person)
+        print("j", j, res[j])
+        initStates[j] = posPlayers[j]
+        obstacle = [(posPlayers[k] if k!= j else None ) for k in range(len(posPlayers))]
+
+        next_hop = res[j].pop()
+        deviation = astar(initStates[j], (row+x_inc +next_hop[0] ,col+y_inc+ next_hop[1]), wallStates, obstacle)
+        new_path = deviation + res[j]
+        if(len(res[j]) <= int(2* len(new_path))):
+                res[j] = astar(initStates[j], goalStates[j], wallStates, obstacle)
+        else:
+            res[j]= new_path
+        x_inc,y_inc = res[j].pop()
+    next_row = row+x_inc
+    next_col = col+y_inc
+    return next_row, next_col
+
+
+
+
 def main():
 
     #for arg in sys.argv:
@@ -163,83 +191,60 @@ def main():
         
     # on localise tous les murs
     wallStates = [w.get_rowcol() for w in game.layers['obstacle']]
-    
-    res = []
-    #obj = astar([initStates[0]], [goalStates[0]], wallStates, 0 )
-    
-    for i in range(nbPlayers):
-        res.append(astar(initStates[i], goalStates[i], wallStates))
     posPlayers = initStates
+    #res = [[] for i in range(nbPlayers)]
+    res= []
+    #obj = astar([initStates[0]], [goalStates[0]], wallStates, 0 )
+    found = [ False for i in range(nbPlayers)]
+    for i in range(nbPlayers):
+        print(i)
+        #Base_strategy(posPlayers,i, res,initStates,  wallStates, goalStates )
+        res.append(astar(initStates[i], goalStates[i], wallStates))
+    
 
     for i in range(iterations):
         for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
-            row,col = posPlayers[j]
-            #print("liste ", j, "   ", res[j])
-            x_inc,y_inc = res[j].pop()
-            # si quelqu'un se trouve a la prochaine case
-            print("next step", x_inc,y_inc)
-            v,p = occupied((row+x_inc,col+y_inc), posPlayers)
-            if(v):
-                print("je suis ", j ,"case occupée par " , p)
-                print("j", j, res[j])
-                initStates[j] = posPlayers[j]
-                obstacle = [(row+x_inc,col+y_inc)]
-                next_hop = res[j].pop()
-                deviation = astar(initStates[j], (row+x_inc +next_hop[0] ,col+y_inc+ next_hop[1]), wallStates, obstacle)
-                new_path = deviation + res[j]
-                if(len(res[j]) <= int(2* len(new_path))):
-          	         res[j] = astar(initStates[j], goalStates[j], wallStates, obstacle)
-                else:
-                    res[j]= new_path
-                x_inc,y_inc = res[j].pop()
-            next_row = row+x_inc
-            next_col = col+y_inc
-            # and ((next_row,next_col) not in posPlayers)
-            
-
-
-            if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
-                players[j].set_rowcol(next_row,next_col)
-                col=next_col
-                row=next_row
-                game.mainiteration()
-                posPlayers[j]=(row,col)
-            # si on a  trouvé un objet on le ramasse
-            if (row,col) in goalStates and goalStates.index((row, col)) == j:
-                o = players[j].ramasse(game.layers)
-                print ("Objet trouvé par le joueur ", j)
-                #goalStates.remove((row,col)) # on enlève ce goalState de la liste
-                indice = goalStates.index((row, col))
-                score[j]+=1
-                game.mainiteration()
-
-
-
-                # et on remet un même objet à un autre endroit
-                x = random.randint(1,19)
-                y = random.randint(1,19)
-                while (x,y) in wallStates:
-                    x = random.randint(1,19)
-                    y = random.randint(1,19)
-                o.set_rowcol(x,y)
-                #goalStates.append((x,y)) # on ajoute ce nouveau goalState
-                goalStates[indice] = (x,y) # on ajoute ce nouveau goalState
-                initStates[j] = posPlayers[j]
-                res[j] = astar(initStates[j], goalStates[j], wallStates )
-                game.layers['ramassable'].add(o)
-                game.mainiteration()                
-
-                break
-
-
-
-    
+            if not found[j]:
+                #row,col = posPlayers[j]
+                #x_inc,y_inc = res[j].pop()
+                #next_row = row+x_inc
+                #next_col = col+y_inc
+                #print("=====================================")
+                #print(" joueur : " + str(j))
+                #print("chemin " + str(res[j]))
+                # and ((next_row,next_col) not in posPlayers)
+                next_row, next_col = stratégie_opportuniste(posPlayers , j, res,initStates,  wallStates, goalStates )
+                if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
+                    players[j].set_rowcol(next_row,next_col)
+                    col=next_col
+                    row=next_row
+                    game.mainiteration()
+                    posPlayers[j]=(row,col)
+                # si on a  trouvé un objet on le ramasse
+                if (row,col) in goalStates and goalStates.index((row, col)) == j:
+                    o = players[j].ramasse(game.layers)
+                    print ("Objet trouvé par le joueur ", j)
+                    #goalStates.remove((row,col)) # on enlève ce goalState de la liste
+                    #indice = goalStates.index((row, col))
+                    score[j]+=1
+                    game.mainiteration()
+                    # et on remet un même objet à un autre endroit
+                    #x = random.randint(1,19)
+                    #y = random.randint(1,19)
+                    #while (x,y) in wallStates:
+                    #    x = random.randint(1,19)
+                    #    y = random.randint(1,19)
+                    #o.set_rowcol(x,y)
+                    #goalStates.append((x,y)) # on ajoute ce nouveau goalState
+                    #goalStates[indice] = (x,y) # on ajoute ce nouveau goalState
+                    #initStates[j] = posPlayers[j]
+                    #res[j] = astar(initStates[j], goalStates[j], wallStates )
+                    #game.layers['ramassable'].add(o)
+                    game.mainiteration()                
+                    found[j] = True
+                    break
     print ("scores:", score)
     pygame.quit()
-    
-        
-    
-   
 
 if __name__ == '__main__':
     main()
