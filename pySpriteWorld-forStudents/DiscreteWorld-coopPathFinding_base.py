@@ -42,11 +42,15 @@ class Noeud:
     def __lt__(self, other):
         return str(self) < str(other)
         
-    def expand(self):
+    def expand(self, wallStates):
         """ étend un noeud avec ces fils
             pour un probleme de taquin p donné
             """
-        nouveaux_fils = [Noeud(self.x + s[0],self.y+ s[1], self.g+1,self) for s in [(1,0), (0,1), (0,-1), (-1,0)]]
+        
+        nouveaux_fils = []
+        for s in [(1,0), (0,1), (0,-1), (-1,0)]:
+            if (self.x + s[0],self.y+ s[1]) not in wallStates and self.x + s[0]>=0 and self.x + s[0]<=19 and self.y+ s[1]>=0 and self.y+ s[1]<=19:
+                nouveaux_fils.append(Noeud(self.x + s[0],self.y+ s[1], self.g+1,self))
         return nouveaux_fils
     def expandNext(self,p,k):
         """ étend un noeud unique, le k-ième fils du noeud n
@@ -89,18 +93,19 @@ def astar(initState, goalState, wallStates, obstacles =[]):
     
         if str(bestNoeud.x) + " " + str(bestNoeud.y) not in reserve:            
             reserve[str(bestNoeud.x) + " " + str(bestNoeud.y)] = bestNoeud.g #maj de reserve
-            nouveauxNoeuds = bestNoeud.expand()            
+            nouveauxNoeuds = bestNoeud.expand(wallStates)            
             for n in nouveauxNoeuds:
                 if (n.x,n.y) not in wallStates and n.x>=0 and n.x<=19 and n.y>=0 and n.y<=19 and (n.x, n.y) not in obstacles:
                     f = n.g+distManhattan((n.x, n.y),goalState)
-                    heapq.heappush(frontiere, (f,n))              
+                    heapq.heappush(frontiere, (f,n))       
     # Afficher le résultat  
     res = []
     while(bestNoeud.pere != None):
-        res.append((bestNoeud.x - bestNoeud.pere.x, bestNoeud.y - bestNoeud.pere.y))   
+        res.append((bestNoeud.x , bestNoeud.y ))   
         bestNoeud = bestNoeud.pere   
     reversed(res)  
        
+    
     return res
 
 
@@ -119,25 +124,12 @@ def occupied(position ,posPlayers):
 #===================================================================================================================================== 
 #=====================================================================================================================================
 #=====================================================================================================================================
-#=====================================================================================================================================
-def real_path(pos, path, wallStates):
-    row, col = pos
-    realPath = []
-    realPath.append((row, col))
-    for i in path:
-
-        row+= i[0]
-        col += i[1]
-        if ((row,col) not in wallStates) and row>=0 and row<=19 and col>=0 and col<=19:
-            realPath.append((row, col))
-    return realPath
+#=====================================================================================================================================    
 
 
 def cross_each_other(posPlayers,wallStates, other_path,actual_path,other, actual):
-    for i in real_path(posPlayers[actual], actual_path, wallStates):
-        if i in real_path(posPlayers[other], other_path, wallStates):
-            print("croisement :  " + str(actual) + " avec " + str(other) + " at : " + str(i))
-
+    for i in  actual_path:
+        if i in other_path:
             return True
     else:
         return False
@@ -146,27 +138,14 @@ def cross_each_other(posPlayers,wallStates, other_path,actual_path,other, actual
 def Base_strategy1(nbPlayers, posPlayers, initStates,  wallStates, goalStates):
     #calculer le chemin sans croiser les autres
 
-    print("=================================================")
-    #print("j = " + str(j))
-
     paths = [ [] ]* nbPlayers
     #etablir les chemins 
     for joueur in range(nbPlayers):
         others_goals = [ (goalStates[k] if k!= joueur else None )for k in range(nbPlayers) ]
         others_initialStates = [ (initStates[k] if k!= joueur else None )for k in range(nbPlayers) ]
         paths[joueur] = astar(initStates[joueur], goalStates[joueur], wallStates, others_initialStates+others_goals)
-
-        print("========================")
-        print("|| joueur " +  str(joueur) + "           ||")
-        print("========================")
-
-        print("path" + str(paths[joueur]))
-
-        print("========================")
-        print("path : " + str(real_path(posPlayers[joueur], paths[joueur], wallStates)))
     Lots = [[]]
     for joueur, path in zip(range(nbPlayers), paths):
-        print("joueur " + str(joueur))
         classé = False
         index_lots = 0
         while not classé and index_lots < len(Lots):
@@ -178,12 +157,10 @@ def Base_strategy1(nbPlayers, posPlayers, initStates,  wallStates, goalStates):
                 index_path +=1
             if paralelle:
                 Lots[index_lots].append((joueur, path))
-                print("classé dans le lot " + str(index_lots))
                 classé = True
             index_lots += 1
         if not classé:
             Lots.append([(joueur, path)])
-            print("lots seul")
     return Lots
 
 
@@ -215,7 +192,7 @@ def init(_boardname=None):
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 5  # frames per second
+    game.fps = 15  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
@@ -263,30 +240,28 @@ def main():
    
     found = [ False for i in range(nbPlayers)]
     Lots  = Base_strategy1(nbPlayers,posPlayers, initStates,  wallStates, goalStates)
-    
+    executions = [[] for i in range(nbPlayers)]
     for lot in Lots:
         for i in range(iterations):
             for joueur_path in lot: # on fait bouger chaque joueur séquentiellement
                 j, path = joueur_path
                 if not found[j]:
-                    row,col = posPlayers[j]
+                    #row,col = posPlayers[j]
 
                     x_inc,y_inc = path.pop()
-                    next_row = row+x_inc
-                    next_col = col+y_inc
+                    next_row = x_inc
+                    next_col = y_inc
                     #print(j,"    ",(next_row, next_col))
                     #print(path)
                     occu, s = occupied((next_row, next_col) ,posPlayers)
-                    if(occu):
-                        print("case " ,(next_row, next_col) , "occupé par" + str(s))
                     #print("=====================================")
-                    #print(" joueur : " + str(j))
-                    if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
-                        players[j].set_rowcol(next_row,next_col)
-                        col=next_col
-                        row=next_row
-                        game.mainiteration()
-                        posPlayers[j]=(row,col)
+                    
+                    executions[j].append((next_row,next_col))
+                    players[j].set_rowcol(next_row,next_col)
+                    col=next_col
+                    row=next_row
+                    game.mainiteration()
+                    posPlayers[j]=(row,col)
                     # si on a  trouvé un objet on le ramasse
                     if (row,col) in goalStates and goalStates.index((row, col)) == j:
                         o = players[j].ramasse(game.layers)
@@ -311,6 +286,7 @@ def main():
                         found[j] = True
                         break
     print ("scores:", score)
+    
     pygame.quit()
 
 if __name__ == '__main__':
