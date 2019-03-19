@@ -97,7 +97,7 @@ def astar(initState, goalState, wallStates, obstacles =[]):
     # Afficher le résultat  
     res = []
     while(bestNoeud.pere != None):
-        res.append((bestNoeud.x - bestNoeud.pere.x, bestNoeud.y - bestNoeud.pere.y))   
+        res.append((bestNoeud.x, bestNoeud.y))   
         bestNoeud = bestNoeud.pere   
     reversed(res)  
        
@@ -119,11 +119,11 @@ game = Game()
 def init(_boardname=None):
     global player,game
     # pathfindingWorld_MultiPlayer
-    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer1'
+    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer2'
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 5  # frames per second
+    game.fps = 25  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
@@ -134,7 +134,7 @@ def stratégie_opportuniste(posPlayers , j, res,initStates,  wallStates, goalSta
     x_inc,y_inc = res[j].pop()
     # si quelqu'un se trouve a la prochaine case
     print("next step", x_inc,y_inc)
-    occupieda,person = occupied((row+x_inc,col+y_inc), posPlayers)
+    occupieda,person = occupied((x_inc,y_inc), posPlayers)
     if(occupieda):
         print("je suis ", j ,"case occupée par " , person)
         print("j", j, res[j])
@@ -142,15 +142,15 @@ def stratégie_opportuniste(posPlayers , j, res,initStates,  wallStates, goalSta
         obstacle = [(posPlayers[k] if k!= j else None ) for k in range(len(posPlayers))]
 
         next_hop = res[j].pop()
-        deviation = astar(initStates[j], (row+x_inc +next_hop[0] ,col+y_inc+ next_hop[1]), wallStates, obstacle)
+        deviation = astar(initStates[j], (next_hop[0] , next_hop[1]), wallStates, obstacle)
         new_path = deviation + res[j]
         if(len(res[j]) <= int(2* len(new_path))):
                 res[j] = astar(initStates[j], goalStates[j], wallStates, obstacle)
         else:
             res[j]= new_path
         x_inc,y_inc = res[j].pop()
-    next_row = row+x_inc
-    next_col = col+y_inc
+    next_row = x_inc
+    next_col = y_inc
     return next_row, next_col
 
 
