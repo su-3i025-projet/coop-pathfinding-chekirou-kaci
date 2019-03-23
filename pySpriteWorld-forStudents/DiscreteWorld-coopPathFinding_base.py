@@ -72,7 +72,7 @@ class Noeud:
             c+=1
         print ("Nombre d'étapes de la solution:", c-1)
         return
-	
+    
 
 
 
@@ -116,10 +116,10 @@ def astar(initState, goalState, wallStates, obstacles =[]):
 
 
 def occupied(position ,posPlayers):
-	for i in range(len(posPlayers)):
-		if position == posPlayers[i]:
-			return (True, i)
-	return (False, -1)
+    for i in range(len(posPlayers)):
+        if position == posPlayers[i]:
+            return (True, i)
+    return (False, -1)
 
 #===================================================================================================================================== 
 #=====================================================================================================================================
@@ -200,7 +200,9 @@ def init(_boardname=None):
 
 
 def main():
-
+    print("==========================================")
+    print("|  cooperative pathfinding strategy 2    |")
+    print("==========================================")
     #for arg in sys.argv:
     iterations = 50 # default
     if len(sys.argv) == 2:

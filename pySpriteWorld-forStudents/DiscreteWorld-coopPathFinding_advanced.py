@@ -27,8 +27,6 @@ def distManhattan(p1,p2):
     
     
 
-
-def Backwards_search():
     
 
 class spaceTime_Noeud:
@@ -79,7 +77,7 @@ class spaceTime_Noeud:
             c+=1
         print ("Nombre d'étapes de la solution:", c-1)
         return
-	
+    
 
 
 
@@ -123,11 +121,11 @@ def spaceTime_astar(initState, goalState, wallStates, time , reservations=[],):
 
 
 def occupied(j, position ,posPlayers):
-	for i in range(len(posPlayers)):
-	
-		if  i != j and position == posPlayers[i]:
-			return (True, i)
-	return (False, -1)
+    for i in range(len(posPlayers)):
+    
+        if  i != j and position == posPlayers[i]:
+            return (True, i)
+    return (False, -1)
 
 #===================================================================================================================================== 
 #=====================================================================================================================================
@@ -166,11 +164,11 @@ game = Game()
 def init(_boardname=None):
     global player,game
     # pathfindingWorld_MultiPlayer
-    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer2'
+    name = _boardname if _boardname is not None else 'pathfindingWorld_MultiPlayer1'
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 15  # frames per second
+    game.fps = 5  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
@@ -178,9 +176,13 @@ def init(_boardname=None):
 
 
 def main():
-
+    
+    print("=======================================")
+    print("|  cooperative pathfinding advanced   |")
+    print("=======================================")
     #for arg in sys.argv:
-    iterations = 50 # default
+    
+    iterations = 50
     if len(sys.argv) == 2:
         iterations = int(sys.argv[1])
     print ("Iterations: ")

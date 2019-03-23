@@ -157,7 +157,9 @@ def stratégie_opportuniste(posPlayers , j, res,initStates,  wallStates, goalSta
 
 
 def main():
-
+    print("=======================================")
+    print("|  cooperative pathfinding splicing   |")
+    print("=======================================")
     #for arg in sys.argv:
     iterations = 50 # default
     if len(sys.argv) == 2:
